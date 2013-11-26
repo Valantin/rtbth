@@ -61,7 +61,7 @@ static int rtbt_pci_suspend(struct pci_dev *pdev, pm_message_t state)
 		return -1;
 	}
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,8,0)	
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,4,0)	
 	os_ctrl = (struct rtbt_os_ctrl *)(hci_dev->driver_data);
 #else
 	os_ctrl = (struct rtbt_os_ctrl *)hci_get_drvdata(hci_dev);
@@ -92,7 +92,7 @@ static int rtbt_pci_resume(struct pci_dev *pdev)
         return -1;
     }
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,8,0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,4,0)
     os_ctrl = (struct rtbt_os_ctrl *)(hci_dev->driver_data);
 #else
     os_ctrl = (struct rtbt_os_ctrl *)hci_get_drvdata(hci_dev);
@@ -258,7 +258,7 @@ static void rtbt_pci_remove(struct pci_dev *pdev)
 		return;
 	}
 	
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,8,0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,4,0)
 	os_ctrl = (struct rtbt_os_ctrl *)(hci_dev->driver_data);
 #else
 	os_ctrl = (struct rtbt_os_ctrl *)hci_get_drvdata(hci_dev);
@@ -372,7 +372,7 @@ printk("%s():-->HCI_RUNNING not set!\n", __FUNCTION__);
 	}
 	
 	if (hdev){
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,8,0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,4,0)
 		os_ctrl = (struct rtbt_os_ctrl *)hdev->driver_data;
 #else
 		os_ctrl = (struct rtbt_os_ctrl *)hci_get_drvdata(hdev);

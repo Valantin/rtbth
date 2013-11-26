@@ -87,7 +87,7 @@ static const char *pkt_type_str[]=
 int rtbt_hci_dev_send(struct sk_buff *skb)
 {
 	struct hci_dev *hdev = (struct hci_dev *)skb->dev;
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,8,0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,4,0)
 	struct rtbt_os_ctrl *os_ctrl = (struct rtbt_os_ctrl *)hdev->driver_data;
 #else
 	struct rtbt_os_ctrl *os_ctrl = (struct rtbt_os_ctrl *)hci_get_drvdata(hdev);
@@ -232,7 +232,7 @@ if (pkt_type == HCI_SCODATA_PKT)
 int rtbt_hci_dev_open(struct hci_dev *hdev)
 {
 	NTSTATUS status = STATUS_FAILURE;
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,8,0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,4,0)
 	struct rtbt_os_ctrl *os_ctrl = (struct rtbt_os_ctrl *)hdev->driver_data;
 #else
 	struct rtbt_os_ctrl *os_ctrl = (struct rtbt_os_ctrl *)hci_get_drvdata(hdev);
@@ -264,7 +264,7 @@ int rtbt_hci_dev_open(struct hci_dev *hdev)
 int rtbt_hci_dev_close(struct hci_dev *hdev)
 {
 	NTSTATUS status = STATUS_FAILURE;
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,8,0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,4,0)
 	struct rtbt_os_ctrl *os_ctrl = (struct rtbt_os_ctrl *)hdev->driver_data;
 #else
 	struct rtbt_os_ctrl *os_ctrl = (struct rtbt_os_ctrl *)hci_get_drvdata(hdev);
@@ -346,7 +346,7 @@ int rtbt_hps_iface_attach(IN struct rtbt_os_ctrl *os_ctrl)
 
 	printk("--->%s()\n", __FUNCTION__);
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,8,0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,4,0)
 	__hci_dev_hold(hdev);
 #else
 	hci_dev_hold(hdev);
@@ -358,7 +358,7 @@ int rtbt_hps_iface_attach(IN struct rtbt_os_ctrl *os_ctrl)
 		return -ENODEV;
 	}
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,8,0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,4,0)
 	__hci_dev_put(hdev);
 #else
 	hci_dev_put(hdev);
@@ -431,7 +431,7 @@ g_hdev=hdev;
 	os_ctrl->if_dev = if_dev;
 	os_ctrl->hps_ops->recv = rtbt_hci_dev_receive;
 	
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,8,0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,4,0)
 	hdev->driver_data = os_ctrl;
 #else
 	hci_set_drvdata(hdev, os_ctrl);
@@ -440,7 +440,7 @@ g_hdev=hdev;
 	hdev->close = rtbt_hci_dev_close;
 	hdev->flush = rtbt_hci_dev_flush;
 	hdev->send = rtbt_hci_dev_send;
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,8,0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,4,0)
 	hdev->destruct = rtbt_hci_dev_destruct;
 #endif
 	hdev->ioctl = rtbt_hci_dev_ioctl;
