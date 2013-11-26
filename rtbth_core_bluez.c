@@ -66,13 +66,14 @@ void rtbt_hci_dev_notify(struct hci_dev *hdev, unsigned int evt)
 }
 
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,8,0)
 void rtbt_hci_dev_destruct(struct hci_dev *hdev)
 {
 	printk("-->%s(): dev=0x%lx!\n", __FUNCTION__, (ULONG)hdev);
 	
 	return;
 }
-
+#endif
 
 int rtbt_hci_dev_flush(struct hci_dev *hdev)
 {
@@ -86,7 +87,11 @@ static const char *pkt_type_str[]=
 int rtbt_hci_dev_send(struct sk_buff *skb)
 {
 	struct hci_dev *hdev = (struct hci_dev *)skb->dev;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,8,0)
 	struct rtbt_os_ctrl *os_ctrl = (struct rtbt_os_ctrl *)hdev->driver_data;
+#else
+	struct rtbt_os_ctrl *os_ctrl = (struct rtbt_os_ctrl *)hci_get_drvdata(hdev);
+#endif
 	struct rtbt_hps_ops *hps_ops;
 	unsigned char pkt_type;
 	int status;
@@ -136,7 +141,11 @@ int rtbt_hci_dev_send(struct sk_buff *skb)
 			
 		case HCI_SCODATA_PKT:
 			printk("-->%s():sco len=%d,time=0x%lx\n", __FUNCTION__, skb->len, jiffies);
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,8,0)
 			os_ctrl->sco_tx_seq = bt_cb(skb)->tx_seq;
+#else
+			os_ctrl->sco_tx_seq = bt_cb(skb)->control.txseq;
+#endif
 			os_ctrl->sco_time_hci = jiffies;
 			
 			status = hps_ops->hci_sco_data(os_ctrl->dev_ctrl, skb->data, skb->len);
@@ -223,7 +232,11 @@ if (pkt_type == HCI_SCODATA_PKT)
 int rtbt_hci_dev_open(struct hci_dev *hdev)
 {
 	NTSTATUS status = STATUS_FAILURE;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,8,0)
 	struct rtbt_os_ctrl *os_ctrl = (struct rtbt_os_ctrl *)hdev->driver_data;
+#else
+	struct rtbt_os_ctrl *os_ctrl = (struct rtbt_os_ctrl *)hci_get_drvdata(hdev);
+#endif
 	//struct rtbt_hps_ops *hps_ops;
 
 	printk("-->%s()\n", __FUNCTION__);
@@ -251,7 +264,11 @@ int rtbt_hci_dev_open(struct hci_dev *hdev)
 int rtbt_hci_dev_close(struct hci_dev *hdev)
 {
 	NTSTATUS status = STATUS_FAILURE;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,8,0)
 	struct rtbt_os_ctrl *os_ctrl = (struct rtbt_os_ctrl *)hdev->driver_data;
+#else
+	struct rtbt_os_ctrl *os_ctrl = (struct rtbt_os_ctrl *)hci_get_drvdata(hdev);
+#endif
 	
 	printk("--->%s()\n", __FUNCTION__);
 
@@ -295,7 +312,11 @@ int rtbt_hps_iface_detach(IN struct rtbt_os_ctrl *os_ctrl)
 
 	printk("--->%s()\n", __FUNCTION__);
 
-    __hci_dev_hold(hdev);
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,8,0)
+	__hci_dev_hold(hdev);
+#else
+	hci_dev_hold(hdev);
+#endif
 
     //rtbt_hci_dev_close(hciDev);
 	/* un-register HCI device */
@@ -303,11 +324,17 @@ int rtbt_hps_iface_detach(IN struct rtbt_os_ctrl *os_ctrl)
 		printk("%s():os_ctrl(%p)->bt_dev is NULL\n", __FUNCTION__, os_ctrl);
 		return -1;
 	}
-		
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,8,0)	
 	if (hci_unregister_dev(hdev) < 0)
 		printk("Can't unregister HCI device %s\n", hdev->name);
 
-    __hci_dev_put(hdev);
+	__hci_dev_put(hdev);
+#else
+	hci_unregister_dev(hdev);
+
+	hci_dev_put(hdev);
+#endif
 
 	printk("<---%s():Success\n", __FUNCTION__);
 	return 0;
@@ -319,7 +346,11 @@ int rtbt_hps_iface_attach(IN struct rtbt_os_ctrl *os_ctrl)
 
 	printk("--->%s()\n", __FUNCTION__);
 
-    __hci_dev_hold(hdev);
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,8,0)
+	__hci_dev_hold(hdev);
+#else
+	hci_dev_hold(hdev);
+#endif
     
 	/* Register HCI device */
 	if (hci_register_dev(hdev) < 0) {
@@ -327,7 +358,11 @@ int rtbt_hps_iface_attach(IN struct rtbt_os_ctrl *os_ctrl)
 		return -ENODEV;
 	}
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,8,0)
 	__hci_dev_put(hdev);
+#else
+	hci_dev_put(hdev);
+#endif
 
 	printk("<---%s():Success\n", __FUNCTION__);
 	return 0;
@@ -396,15 +431,23 @@ g_hdev=hdev;
 	os_ctrl->if_dev = if_dev;
 	os_ctrl->hps_ops->recv = rtbt_hci_dev_receive;
 	
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,8,0)
 	hdev->driver_data = os_ctrl;
+#else
+	hci_set_drvdata(hdev, os_ctrl);
+#endif
 	hdev->open = rtbt_hci_dev_open;
 	hdev->close = rtbt_hci_dev_close;
 	hdev->flush = rtbt_hci_dev_flush;
 	hdev->send = rtbt_hci_dev_send;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,8,0)
 	hdev->destruct = rtbt_hci_dev_destruct;
+#endif
 	hdev->ioctl = rtbt_hci_dev_ioctl;
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,4,0)
 	hdev->owner = THIS_MODULE;
+#endif
 
 	printk("<--%s():alloc hdev(0x%lx) done\n", __FUNCTION__, (ULONG)hdev);
 	
