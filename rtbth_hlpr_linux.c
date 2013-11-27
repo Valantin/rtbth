@@ -695,135 +695,9 @@ int ral_task_deinit(
 	return STATUS_SUCCESS;
 }
 
-#ifdef OS_ABL_SUPPORT
-static struct rtbt_dev_entry *g_devlist = NULL;
-static DEFINE_SPINLOCK(g_devlock);
-
-void dump_dev_list(struct rtbt_dev_entry *devlist)
-{
-	unsigned long irq_flag;
-	struct rtbt_dev_entry *dev_ent;
-	int cnt = 0;
-	int dump_all;
-
-	dump_all = devlist ? 0 : 1;
-	
-	printk("Wrapper:dump the global dev list:\n");
-	
-	spin_lock_irqsave(&g_devlock, irq_flag);
-	dev_ent = dump_all ? g_devlist : devlist;
-	while (dev_ent != NULL) {
-		struct ral_dev_id *dev_id;
-		
-		printk("\tDevGroup[%d]:\n", cnt);
-		printk("\t\tinfType = %d\n", dev_ent->infType);
-		printk("\t\tdevType = %d\n", dev_ent->devType);
-		printk("\t\tdev_priv = 0x%p\n", dev_ent->dev_ops);
-		printk("\t\tos_priv = 0x%p\n", dev_ent->os_private);
-		printk("\t\tmlen = %d\n", dev_ent->mlen);
-		printk("\t\tdevIDList:\n");
-		if (dev_ent->pDevIDList) {
-			dev_id = dev_ent->pDevIDList;
-			while((dev_id->pid != 0) && (dev_id->vid != 0)) {
-				printk("\t\t\tPID:0x%02x, DID:0x%02x\n", 
-					dev_id->pid, dev_id->vid);
-				dev_id++;
-			}
-		}
-		dev_ent = (dump_all ? dev_ent->next : NULL);
-	}
-	
-	printk("\n\n");
-	spin_unlock_irqrestore(&g_devlock, irq_flag);
-	
-}
-
-static int rtbt_dev_list_add(struct rtbt_dev_entry *devlist)
-{
-	unsigned long irq_flag;
-	
-	printk("%s(): add devlist from global list!\n", __FUNCTION__);
-
-	spin_lock_irqsave(&g_devlock, irq_flag);
-	devlist->next = g_devlist;
-	g_devlist = devlist;
-	spin_unlock_irqrestore(&g_devlock, irq_flag);
-
-	dump_dev_list(NULL);
-	return 0;
-}
-
-static int rtbt_dev_list_del(struct rtbt_dev_entry *devlist)
-{
-	unsigned long irq_flag;
-	struct rtbt_dev_entry *head, *prev;
-	
-	printk("%s(): remove devlist from global list!\n", __FUNCTION__);
-
-	spin_lock_irqsave(&g_devlock, irq_flag);	
-	head = g_devlist;
-	while (head != NULL){
-		if (devlist == head)
-			break;
-		prev = head;
-		head = head->next;
-	}
-	
-	if (head){
-		if (head == g_devlist)
-			g_devlist = head->next;
-		else
-			prev->next = head->next;
-	}
-	spin_unlock_irqrestore(&g_devlock, irq_flag);
-
-	dump_dev_list(NULL);
-		
-	return 0;
-}
-
-static int __init rtbt_linux_init(void)
-{
-	unsigned long irq_flag;
-	
-	printk("-->%s()\n", __FUNCTION__);
-	spin_lock_init(&g_devlock);
-	spin_lock_init(&g_reslock);
-
-	spin_lock_irqsave(&g_devlock, irq_flag);
-	g_devlist = NULL;
-	spin_unlock_irqrestore(&g_devlock, irq_flag);
-	printk("<--%s(): g_devlist(@0x%lx)=0x%p!\n", __FUNCTION__, (ULONG)&g_devlist, g_devlist);
-	
-	return 0;
-}
-
-static void __exit rtbt_linux_exit(void)
-{
-	printk("-->%s()\n", __FUNCTION__);
-	while (g_devlist != NULL)
-		ral_os_unregister(g_devlist);
-	printk("<--%s(): g_devlist(@0x%lx)=0x%p!\n", __FUNCTION__, (ULONG)&g_devlist, g_devlist);
-
-	return;
-}
-
-MODULE_AUTHOR("Ralink Tech.");
-MODULE_DESCRIPTION("Support for Ralink Bluetooth cards");
-MODULE_SUPPORTED_DEVICE("Ralink Bluetooth cards");
-MODULE_LICENSE("GPL");
-
-module_init(rtbt_linux_init);
-module_exit(rtbt_linux_exit);
-#endif // OS_ABL_SUPPORT //
-
 int ral_os_register(struct rtbt_dev_entry *pDevList)
 {
 	int retVal = -1;
-
-#ifdef OS_ABL_SUPPORT
-	rtbt_dev_list_add(pDevList);
-#endif // OS_ABL_SUPPORT //
 
 #ifdef RTBT_IFACE_PCI
 	if ((pDevList->infType == RAL_INF_PCI) && 
@@ -850,10 +724,6 @@ int ral_os_unregister(struct rtbt_dev_entry * pDevList)
 			printk("unregister device to OS failed\n");
 	}
 #endif // RTBT_IFACE_PCI //
-
-#ifdef OS_ABL_SUPPORT
-	rtbt_dev_list_del(pDevList);
-#endif // OS_ABL_SUPPORT //
 
 	return rv;
 }

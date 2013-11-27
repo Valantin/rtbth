@@ -32,9 +32,6 @@
 #include "rtbt_osabl.h"
 #include "rtbth_us.h"
 
-#ifdef OS_ABL_SUPPORT
-/* struct pci_device_id *rtbt_pci_ids = NULL; */
-#else
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3,8,0)
 static struct pci_device_id rtbt_pci_ids[] __devinitdata = {
 #else
@@ -44,7 +41,6 @@ static struct pci_device_id rtbt_pci_ids[] = {
 	{}
 };
 MODULE_DEVICE_TABLE(pci, rtbt_pci_ids);
-#endif // OS_ABL_SUPPORT //
 
 int rtbth_rx_packet(void *pdata, RXBI_STRUC rxbi, void *buf, unsigned int len);
 
@@ -53,8 +49,6 @@ static int rtbt_pci_suspend(struct pci_dev *pdev, pm_message_t state)
 {
     struct hci_dev *hci_dev = (struct hci_dev *)pci_get_drvdata(pdev);
 	struct rtbt_os_ctrl *os_ctrl;
-
-//    printk("%s():Into suspend! pm_message_state=%d\n", __FUNCTION__, state);//sean wang linux, fix the build warning, type casting
 	
 	if (hci_dev == NULL){
 		printk("%s(): pci_get_drvdata failed!\n", __FUNCTION__);
@@ -70,11 +64,6 @@ static int rtbt_pci_suspend(struct pci_dev *pdev, pm_message_t state)
 		printk("%s(): hci_dev->driver_data is NULL!\n", __FUNCTION__);
 		return -1;
 	}
-    
-//msleep(10000);
-//    rtbt_hps_iface_detach(os_ctrl);
-//    os_ctrl->hps_ops->suspend(os_ctrl->dev_ctrl);
-
 
 	printk("Exit from rtbt_pci_remove!\n");
     
@@ -102,9 +91,7 @@ static int rtbt_pci_resume(struct pci_dev *pdev)
         return -1;
     }
 
- //   os_ctrl->hps_ops->resume(os_ctrl->dev_ctrl);
- //   rtbt_hps_iface_attach(os_ctrl);
- //   printk("Exit from rtbt_pci_remove!\n");
+    printk("Exit from rtbt_pci_resume!\n");
 
     return 0;
 }
@@ -309,9 +296,6 @@ static void rtbt_pci_remove(struct pci_dev *pdev)
 
 static struct pci_driver rtbt_pci_driver = {
 	.name = "rtbt",
-#ifndef OS_ABL_SUPPORT
-	.id_table = rtbt_pci_ids,
-#endif /* OS_ABL_SUPPORT */
 	.probe = rtbt_pci_probe,
 #if LINUX_VERSION_CODE >= 0x20412
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3,8,0)
@@ -469,66 +453,6 @@ void rtbt_dma_mem_free(
 }
 
 
-
-#if 1 //def OS_ABL_SUPPORT
-static int rtbt_linux_pci_ids_create(struct rtbt_dev_entry *pRalDevList)
-{
-	struct pci_device_id *pIdTable = NULL, *pTbPtr = NULL;
-	struct ral_dev_id *pDevIDList;
-	int size = 0;
-	int phase = 1;
-	//int status;
-	
-	/* First parsing the IdTb and convert to linux specific "pci_device_id" format */
-loop:
-	pDevIDList = pRalDevList->pDevIDList;
-	while(pDevIDList){
-		printk("RTBT_Tb:vendor=0x%x, device=0x%x\n", pDevIDList->vid, pDevIDList->pid);
-		if (pDevIDList->pid && pDevIDList->vid) {
-			if (phase == 1)
-				size++;
-			else
-			{
-				pTbPtr->vendor = pDevIDList->vid;
-				pTbPtr->device = pDevIDList->pid;
-				pTbPtr->subvendor = PCI_ANY_ID;
-				pTbPtr->subdevice = PCI_ANY_ID;
-				pTbPtr->driver_data = (unsigned long)pRalDevList->dev_ops;
-				printk("Convert: vendor=0x%x, device=0x%x\n", pTbPtr->vendor, pTbPtr->device);
-				pTbPtr++;
-			}
-			pDevIDList++;
-		}
-		else
-			break;
-	}
-
-	if (phase == 1) {
-		if (size > 0 ) {
-			size = (size+1) * sizeof(struct pci_device_id);
-			if ((pIdTable = kmalloc(size, GFP_KERNEL)) == NULL)
-				return -1;
-			memset(pIdTable, 0, size);
-			printk("DynamicAlloc pci_device_id table at 0x%p with size %d\n", pIdTable, size);
-			pTbPtr = pIdTable;
-			pRalDevList->os_private = pIdTable;
-			phase = 2;
-			goto loop;
-		}
-	}
-
-	if (pRalDevList->os_private) {
-		pTbPtr = (struct pci_device_id *)pRalDevList->os_private;
-		while(pTbPtr->vendor != 0){
-			printk("pci_device_id: vendor=0x%x, device=0x%x\n", pTbPtr->vendor, pTbPtr->device);
-			pTbPtr++;
-		}
-	}
-	return ((pRalDevList->os_private == NULL) ? -1 : 0);
-}
-#endif /* OS_ABL_SUPPORT */
-
-
 /*******************************************************************************
 
 	Functions used for OS hooking functions.
@@ -536,34 +460,13 @@ loop:
  *******************************************************************************/
 int rtbt_iface_pci_hook(struct rtbt_dev_entry *pIdTb)
 {
-
-#if 1 // def OS_ABL_SUPPORT
-	rtbt_linux_pci_ids_create(pIdTb);
-
-	rtbt_pci_driver.id_table = (struct pci_device_id *)pIdTb->os_private;
-	if (rtbt_pci_driver.id_table  == NULL){
-		printk("id_table is NULL!\n");
-		return -1;
-	} 
-#else
-	//rtbt_pci_driver.id_table = rtbt_pci_ids;
-	//printk("rtbt_iface_pci_hook! IdCnt=%d!rtbt_pci_ids=0x%x\n", IdCnt, (ULONG)rtbt_pci_ids);
-#endif
-
-		return pci_register_driver(&rtbt_pci_driver);
-
+	return pci_register_driver(&rtbt_pci_driver);
 }
 
 
 int rtbt_iface_pci_unhook(struct rtbt_dev_entry *pIdTb)
 {	
 	pci_unregister_driver(&rtbt_pci_driver);
-
-#if 1 //def OS_ABL_SUPPORT
-	if (pIdTb->os_private)
-		kfree(pIdTb->os_private);
-	rtbt_pci_driver.id_table = NULL;
-#endif /* OS_ABL_SUPPORT */
 	
 	printk("remove rtbt_pci_driver done!\n");
 	return 0;

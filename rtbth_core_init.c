@@ -1456,99 +1456,11 @@ VOID BthShutdown(
 }
 
 INT rtbt_hps_suspend(void *pDevCtrl){
-    
-//    RTBTH_ADAPTER *pAd = (RTBTH_ADAPTER *)pDevCtrl;
-//    struct rtbt_os_ctrl *os_ctrl;
-
-return 1;
-#if 0
-    os_ctrl = pAd->os_ctrl;
-
-    //
-    // detached the blue-z core.
-    //
-
-    printk("--->%s, before rtbt_hps_iface_detach\n", __FUNCTION__);
-    //msleep(3000);    
-  //  rtbt_hps_iface_detach(os_ctrl);
-    printk("--->%s, after rtbt_hps_iface_detach\n", __FUNCTION__);
-    //
-    // shutdown the RT3290
-    //
-
-    DebugPrint(TRACE, DBG_MISC, "PciDrvReturnResources\n");
-
-    /* Reset and put the device into a known initial state. */
-    RT_CLEAR_FLAG(pAd, fRTMP_ADAPTER_INTERRUPT_IN_USE);
-
-    BthShutdown(pAd);
-
-    _rtbth_us_event_notification(pAd, INIT_CORESTOP_EVENT);
-
-    //ExDeleteNPagedLookasideList(&FdoData->HCIDataLookasideList);
-    
-    RtmpOSIRQRelease(os_ctrl->if_dev, os_ctrl->bt_dev);
-
-    if (pAd->sco_event_buf)
-        ral_mem_free(pAd->sco_event_buf);
-
-    if (pAd->sco_data_buf)
-        ral_mem_free(pAd->sco_data_buf);
-
-    /* Disconnect from the interrupt and unmap any I/O ports */
-    // TODO: Shiang, fix it!!
-    #if 0
-    BthUnmapHWResources(pAd);
-    #endif
-    DebugPrint(TRACE, DBG_INIT, "\n BthFreeDeviceResources ==>\n");
-
-    return STATUS_SUCCESS;
-#endif
-    
+	return 1;
 }
 
 INT rtbt_hps_resume(void *pDevCtrl){
- return 1;  
-
- #if 0
-    int status;
-    RTBTH_ADAPTER *pAd = (RTBTH_ADAPTER *)pDevCtrl;
-    struct rtbt_os_ctrl *os_ctrl;
-
-    os_ctrl = pAd->os_ctrl;
-
-    //
-    // power on the RT3290
-    //
-    DebugPrint(TRACE, DBG_INIT, "-->%s()\n", __FUNCTION__);
-    pAd->sco_event_buf = ral_mem_alloc(128 * 4, RAL_MEM_NORMAL);
-  
-    pAd->sco_data_buf = ral_mem_alloc( PKT_HV3_MAX_DATA_LEN * 2 + 3, RAL_MEM_NORMAL);
-
-    status = BthInitialize(pAd);
-    if (!NT_SUCCESS (status)){
-        DebugPrint(TRACE, DBG_INIT, "BthInitialize failed: 0x%x\n", status);
-        return status;
-    }
-
-    // Clear garbage interrupt status.
-    RT_IO_WRITE32(pAd, INT_SOURCE_CSR, 0xffffffff);
-
-    DebugPrint(TRACE, DBG_INIT, "BthEnableInterrupt \n");
-
-    //	DebugPrint(TRACE, DBG_THREAD, "Shiang: Here we stop the rtbt_hps_open!Remove it latter(status=%d)!\n", status);
-    //	return status;
-    BthEnableInterrupt(pAd);
-    BthEnableRxTx(pAd);
-    
-    //
-    // attached the blue-z core.
-    //
-    //rtbt_hps_iface_attach(os_ctrl);
-
-    return status;
-#endif
-    
+	return 1;
 }
 
 INT rtbt_hps_open(void *pDevCtrl)
